@@ -33,16 +33,7 @@ class TestArchiveParser(unittest.TestCase):
 
         return temp_file
 
-    def get_archive_file(self, lines):
-        return self.get_multi_file_archive([lines])
-
-    def get_multi_file_archive(self, files_lines):
-        temp_directory = tempfile.mkdtemp()
-
-        test_archive_files = []
-        for file_lines in files_lines:
-            test_archive_files.append(self.get_temp_file(temp_directory, file_lines))
-
+    def make_archive_file(self, temp_directory):
         temp_tar_file = tempfile.mkstemp()
         temp_tar_file_name = temp_tar_file[1]
 
@@ -54,6 +45,18 @@ class TestArchiveParser(unittest.TestCase):
 
         return archive_file
 
+    def get_archive_file(self, lines):
+        return self.get_multi_file_archive([lines])
+
+    def get_multi_file_archive(self, files_lines):
+        temp_directory = tempfile.mkdtemp()
+
+        test_archive_files = []
+        for file_lines in files_lines:
+            test_archive_files.append(self.get_temp_file(temp_directory, file_lines))
+
+        return self.make_archive_file(temp_directory)
+
     def get_nested_multi_file_archive(self, files_lines):
         root_temp_directory = tempfile.mkdtemp()
 
@@ -64,16 +67,7 @@ class TestArchiveParser(unittest.TestCase):
                 self.get_temp_file(nested_directory, lines))
             nested_directory = tempfile.mkdtemp(dir=nested_directory)
 
-        temp_tar_file = tempfile.mkstemp()
-        temp_tar_file_name = temp_tar_file[1]
-
-        self.temp_files.append(temp_tar_file_name)
-
-        with tarfile.open(temp_tar_file_name, "w") as archive_file:
-            archive_file.add(root_temp_directory)
-            archive_file.close()
-
-        return archive_file
+        return self.make_archive_file(root_temp_directory)
 
     def _check_sys_exit(self, exit_code):
         self._exit_code = exit_code
@@ -286,3 +280,6 @@ class TestArchiveParser(unittest.TestCase):
         self.assertIn({"date": "date1", "from": "from1", "subject": "subject1"}, result)
         self.assertIn({"date": "date2", "from": "from2", "subject": "subject2"}, result)
         self.assertIn({"date": "date3", "from": "from3", "subject": "subject3"}, result)
+
+    # @patch("os.open", autospec=True)
+    # def test_save_parsing_results_saves_data_to_correct_file(self, mock_open):
