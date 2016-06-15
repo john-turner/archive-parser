@@ -24,37 +24,24 @@ class TestArchiveParser(unittest.TestCase):
         for temp_file in self.temp_files:
             os.remove(temp_file)
 
-    def get_archive_file(self, lines):
-        temp_directory = tempfile.mkdtemp()
-
+    def get_temp_file(self, temp_directory, lines):
         file_content = "".join(lines)
+        print(file_content)
+        temp_file = tempfile.NamedTemporaryFile(dir=temp_directory)
+        temp_file.write(file_content)
+        temp_file.flush()
 
-        temp_file_one = tempfile.NamedTemporaryFile(dir=temp_directory)
-        temp_file_one.write(file_content)
-        temp_file_one.flush()
+        return temp_file
 
-        temp_tar_file = tempfile.mkstemp()
-        temp_tar_file_name = temp_tar_file[1]
-
-        self.temp_files.append(temp_tar_file_name)
-
-        with tarfile.open(temp_tar_file_name, "w") as archive_file:
-            archive_file.add(temp_file_one.name)
-            archive_file.close()
-
-        return archive_file
+    def get_archive_file(self, lines):
+        return self.get_multi_file_archive([lines])
 
     def get_multi_file_archive(self, files_lines):
         temp_directory = tempfile.mkdtemp()
 
-        temp_files = []
+        test_archive_files = []
         for file_lines in files_lines:
-            file_content = "".join(file_lines)
-
-            temp_file = tempfile.NamedTemporaryFile(dir=temp_directory)
-            temp_file.write(file_content)
-            temp_file.flush()
-            temp_files.append(temp_file)
+            test_archive_files.append(self.get_temp_file(temp_directory, file_lines))
 
         temp_tar_file = tempfile.mkstemp()
         temp_tar_file_name = temp_tar_file[1]
@@ -62,11 +49,13 @@ class TestArchiveParser(unittest.TestCase):
         self.temp_files.append(temp_tar_file_name)
 
         with tarfile.open(temp_tar_file_name, "w") as archive_file:
-            for temp_file in temp_files:
+            for temp_file in test_archive_files:
                 archive_file.add(temp_file.name)
             archive_file.close()
 
         return archive_file
+
+    # def get_nested_multi_file_archive(self, files_lines):
 
     def _check_sys_exit(self, exit_code):
         self._exit_code = exit_code
