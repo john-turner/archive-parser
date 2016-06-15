@@ -4,8 +4,9 @@ import mock
 import tempfile
 import tarfile
 import os
+import json
 
-from archive_parser import main, InvalidArchiveFile, parse_archive
+from archive_parser import main, InvalidArchiveFile, parse_archive, save_parsing_results
 
 _ORIGINAL_SYS_EXIT = sys.exit
 
@@ -78,20 +79,33 @@ class TestArchiveParser(unittest.TestCase):
         with self.assertRaises(SysExitCalled):
             main()
 
+    @mock.patch("archive_parser.parse_archive", autospec=True)
     @mock.patch("os.path.isfile")
-    def test_archive_parser_requires_valid_file_path(self, mock_isfile):
+    def test_archive_parser_requires_output_file_argument(self, mock_isfile, mock_archive_parser):
         sys.argv = ["archive_parser.py", "archives/test.msg"]
+        mock_isfile.return_value = True
+
+        with self.assertRaises(SysExitCalled):
+            main()
+
+    @mock.patch("os.path.isfile")
+    def test_archive_parser_requires_valid_archive_file(self, mock_isfile):
+        sys.argv = ["archive_parser.py", "archives/test.msg", "output_file_path"]
         mock_isfile.return_value = False
 
         with self.assertRaises(InvalidArchiveFile):
             main()
 
     @mock.patch("archive_parser.parse_archive")
-    def test_archive_parser_passes_correct_file_path_to_extractor(self, mock_extractor):
-        temp_file = tempfile.NamedTemporaryFile()
-        sys.argv = ["archive_parser.py", temp_file.name]
+    @mock.patch("os.access")
+    @mock.patch("os.path.isfile")
+    def test_archive_parser_passes_correct_file_path_to_extractor(
+            self, mock_isfile, mock_access, mock_extractor):
+        mock_isfile.return_value = True
+        mock_access.return_value = True
+        sys.argv = ["archive_parser.py", "archive", "output"]
         main()
-        mock_extractor.assert_called_with(temp_file.name)
+        mock_extractor.assert_called_with("archive")
 
     def test_parse_archive_raises_on_non_tar_file(self):
         temp_file = tempfile.NamedTemporaryFile()
@@ -281,5 +295,22 @@ class TestArchiveParser(unittest.TestCase):
         self.assertIn({"date": "date2", "from": "from2", "subject": "subject2"}, result)
         self.assertIn({"date": "date3", "from": "from3", "subject": "subject3"}, result)
 
-    # @patch("os.open", autospec=True)
-    # def test_save_parsing_results_saves_data_to_correct_file(self, mock_open):
+    def test_save_parsing_results_saves_data_to_correct_file(self):
+            # temp_output_file = tempfile.mkstemp()
+            # temp_output_file_name = temp_output_file[1]
+
+            # self.temp_files.append(temp_output_file_name)
+            # with tarfile.open(temp_output_file_name, "w"):
+            #     print(1)
+            temp_output_file_name = tempfile.NamedTemporaryFile().name
+
+            results = [
+                {"date": "date1", "from": "from1", "subject": "subject1"},
+                {"date": "date2", "frsom": "from2", "subject": "subject2"}]
+
+            save_parsing_results(temp_output_file_name, results)
+
+            with open(temp_output_file_name) as ouput_file:
+                json_output_data = json.load(ouput_file)
+                print(json_output_data)
+                self.assertEqual({"results": results}, json_output_data)

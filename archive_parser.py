@@ -3,7 +3,7 @@ import os
 import tarfile
 import re
 import pprint
-
+import json
 
 HEADER_PATTERNS = {
     "date": re.compile("Date:\s*(.*)", flags=re.IGNORECASE),
@@ -66,12 +66,20 @@ def parse_archive(archive_file_path):
     return results
 
 
+def save_parsing_results(output_file_path, results):
+    result = {"results": results}
+    with open(output_file_path, 'w') as output_file:
+        json.dump(result, output_file, ensure_ascii=False)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Parse an archive of MSG files for date sent, the sender, "
         "and the subject of each message")
     parser.add_argument(
         "archive", type=str, help="the path to the archive file")
+    parser.add_argument(
+        "output_file_path", type=str, help="the path to write the results")
 
     args = parser.parse_args()
 
