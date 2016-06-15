@@ -26,7 +26,7 @@ class TestArchiveParser(unittest.TestCase):
 
     def get_temp_file(self, temp_directory, lines):
         file_content = "".join(lines)
-        print(file_content)
+
         temp_file = tempfile.NamedTemporaryFile(dir=temp_directory)
         temp_file.write(file_content)
         temp_file.flush()
@@ -49,13 +49,31 @@ class TestArchiveParser(unittest.TestCase):
         self.temp_files.append(temp_tar_file_name)
 
         with tarfile.open(temp_tar_file_name, "w") as archive_file:
-            for temp_file in test_archive_files:
-                archive_file.add(temp_file.name)
+            archive_file.add(temp_directory)
             archive_file.close()
 
         return archive_file
 
-    # def get_nested_multi_file_archive(self, files_lines):
+    def get_nested_multi_file_archive(self, files_lines):
+        root_temp_directory = tempfile.mkdtemp()
+
+        nested_directory = root_temp_directory
+        test_archive_files = []
+        for lines in files_lines:
+            test_archive_files.append(
+                self.get_temp_file(nested_directory, lines))
+            nested_directory = tempfile.mkdtemp(dir=nested_directory)
+
+        temp_tar_file = tempfile.mkstemp()
+        temp_tar_file_name = temp_tar_file[1]
+
+        self.temp_files.append(temp_tar_file_name)
+
+        with tarfile.open(temp_tar_file_name, "w") as archive_file:
+            archive_file.add(root_temp_directory)
+            archive_file.close()
+
+        return archive_file
 
     def _check_sys_exit(self, exit_code):
         self._exit_code = exit_code
@@ -249,7 +267,22 @@ class TestArchiveParser(unittest.TestCase):
 
         result = parse_archive(test_archive_file.name)
 
-        self.assertEqual([
-            {"date": "date1", "from": "from1", "subject": "subject1"},
-            {"date": "date2", "from": "from2", "subject": "subject2"},
-            {"date": "date3", "from": "from3", "subject": "subject3"}], result)
+        self.assertEqual(3, len(result))
+        self.assertIn({"date": "date1", "from": "from1", "subject": "subject1"}, result)
+        self.assertIn({"date": "date2", "from": "from2", "subject": "subject2"}, result)
+        self.assertIn({"date": "date3", "from": "from3", "subject": "subject3"}, result)
+
+    def test_parsing_returns_correct_data_from_nested_multi_file_archive(self):
+        files_contents = [
+            ["Date: date1\n", "Subject: subject1\n", "From: from1\n"],
+            ["Date: date2\n", "Subject: subject2\n", "From: from2\n"],
+            ["Date: date3\n", "Subject: subject3\n", "From: from3\n"],
+        ]
+        test_archive_file = self.get_nested_multi_file_archive(files_contents)
+
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual(3, len(result))
+        self.assertIn({"date": "date1", "from": "from1", "subject": "subject1"}, result)
+        self.assertIn({"date": "date2", "from": "from2", "subject": "subject2"}, result)
+        self.assertIn({"date": "date3", "from": "from3", "subject": "subject3"}, result)
