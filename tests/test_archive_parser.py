@@ -18,12 +18,6 @@ class TestArchiveParser(unittest.TestCase):
     def setUp(self):
         sys.exit = self._check_sys_exit
         self.temp_files = []
-        self.default_entries = {
-            "date": "Date: Fri, 01 Apr 2011 05:52:55 PDT\n",
-            "from": "From: Corel <news@email1-corel.com>\n",
-            "subject": "Subject: PREVIEW:   Save $170 and get special gift with CorelDraw Premium"
-            "Suite X5\n"
-        }
 
     def tearDown(self):
         sys.exit = _ORIGINAL_SYS_EXIT
@@ -46,6 +40,30 @@ class TestArchiveParser(unittest.TestCase):
 
         with tarfile.open(temp_tar_file_name, "w") as archive_file:
             archive_file.add(temp_file_one.name)
+            archive_file.close()
+
+        return archive_file
+
+    def get_multi_file_archive(self, files_lines):
+        temp_directory = tempfile.mkdtemp()
+
+        temp_files = []
+        for file_lines in files_lines:
+            file_content = "".join(file_lines)
+
+            temp_file = tempfile.NamedTemporaryFile(dir=temp_directory)
+            temp_file.write(file_content)
+            temp_file.flush()
+            temp_files.append(temp_file)
+
+        temp_tar_file = tempfile.mkstemp()
+        temp_tar_file_name = temp_tar_file[1]
+
+        self.temp_files.append(temp_tar_file_name)
+
+        with tarfile.open(temp_tar_file_name, "w") as archive_file:
+            for temp_file in temp_files:
+                archive_file.add(temp_file.name)
             archive_file.close()
 
         return archive_file
@@ -231,3 +249,18 @@ class TestArchiveParser(unittest.TestCase):
         self.assertEqual([
             {"subject": "PREVIEW:   Save $170 and get special gift with CorelDraw Premium"
                 "Suite X5"}], result)
+
+    def test_parsing_returns_correct_data_from_multi_file_archive(self):
+        files_contents = [
+            ["Date: date1\n", "Subject: subject1\n", "From: from1\n"],
+            ["Date: date2\n", "Subject: subject2\n", "From: from2\n"],
+            ["Date: date3\n", "Subject: subject3\n", "From: from3\n"],
+        ]
+        test_archive_file = self.get_multi_file_archive(files_contents)
+
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual([
+            {"date": "date1", "from": "from1", "subject": "subject1"},
+            {"date": "date2", "from": "from2", "subject": "subject2"},
+            {"date": "date3", "from": "from3", "subject": "subject3"}], result)
