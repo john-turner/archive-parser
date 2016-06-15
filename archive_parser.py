@@ -2,6 +2,8 @@ import argparse
 import os
 import tarfile
 import re
+import pprint
+
 
 HEADER_PATTERNS = {
     "date": re.compile("Date:\s*(.*)", flags=re.IGNORECASE),
@@ -18,15 +20,13 @@ def parse_header_iterator(archive, archive_file):
     extracted_file = archive.extractfile(archive_file)
     for line in extracted_file:
         if line == b"\n":
-            print("HERE")
             break
-        print("LINE", line)
         yield line
 
 
 def parse_line_for_header(line):
-    for header, pattern in HEADER_PATTERNS.iteritems():
-        match = pattern.match(line)
+    for header, pattern in HEADER_PATTERNS.items():
+        match = pattern.match(line.decode())
         if match:
             return header, match
 
@@ -35,15 +35,17 @@ def parse_line_for_header(line):
 
 def parse_extracted_file(archive, archive_file):
     parsed_headers = {}
-    last_parsed_header = ""
+    last_parsed_header = None
     for line in parse_header_iterator(archive, archive_file):
         header, match = parse_line_for_header(line)
         if match:
-            if header == "continuation":
+            if header == "continuation" and last_parsed_header:
                 parsed_headers[last_parsed_header] += match.group(1)
-            else:
+            elif header != "continuation":
                 parsed_headers[header] = match.group(1)
                 last_parsed_header = header
+        else:
+            last_parsed_header = None
 
     return parsed_headers
 
@@ -75,7 +77,10 @@ def main():
     if not os.path.isfile(args.archive):
         raise InvalidArchiveFile("{} is not a valid file path.".format(args.archive))
 
-    parse_archive(args.archive)
+    result = parse_archive(args.archive)
+
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(result)
 
 if __name__ == "__main__":
     main()

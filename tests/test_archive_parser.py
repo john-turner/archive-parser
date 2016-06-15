@@ -127,3 +127,62 @@ class TestArchiveParser(unittest.TestCase):
         result = parse_archive(test_archive_file.name)
 
         self.assertEqual([{}], result)
+
+    def test_parsing_ignores_non_parsed_header_continuation(self):
+        test_archive_file = self.get_archive_file([
+            "test: test \n\t\t test\n",
+            "date: Fri, 02 Apr 2011 \n\t\t05:52:55 PDT\n",
+            "test1: test1 \n\t\t test1\n"
+        ])
+
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual([{"date": "Fri, 02 Apr 2011 05:52:55 PDT"}], result)
+
+    def test_parsing_from_returns_correct_data(self):
+        test_archive_file = self.get_archive_file(
+            ["From: Corel <news@email1-corel.com>\n"])
+
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual([{"from": "Corel <news@email1-corel.com>"}], result)
+
+    def test_parsing_from_ignores_case(self):
+        test_archive_file = self.get_archive_file(
+            ["from: Corel <news@email1-corel.com>\n"])
+
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual([{"from": "Corel <news@email1-corel.com>"}], result)
+
+    def test_parsing_from_accepts_no_space_delimeter(self):
+        test_archive_file = self.get_archive_file(
+            ["from:Corel <news@email1-corel.com>\n"])
+
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual([{"from": "Corel <news@email1-corel.com>"}], result)
+
+    def test_parsing_from_accepts_extra_space(self):
+        test_archive_file = self.get_archive_file(
+            ["from:           Corel <news@email1-corel.com>\n"])
+
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual([{"from": "Corel <news@email1-corel.com>"}], result)
+
+    def test_parsing_from_accepts_multiple_lines(self):
+        test_archive_file = self.get_archive_file(
+            ["from:           Corel \n\t\t<news@email1-corel.com>\n"])
+
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual([{"from": "Corel <news@email1-corel.com>"}], result)
+
+    def test_parses_subject_correctly(self):
+        test_archive_file = self.get_archive_file(
+            ["From: Corel <news@email1-corel.com>\n"])
+
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual([{"from": "Corel <news@email1-corel.com>"}], result)
