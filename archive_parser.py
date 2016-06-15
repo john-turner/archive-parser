@@ -5,7 +5,8 @@ import re
 
 HEADER_PATTERNS = {
     "date": re.compile("Date:\s*(.*)", flags=re.IGNORECASE),
-    "continuation": re.compile("^\s+(.*)")
+    "continuation": re.compile("^\s+(.*)"),
+    "from": re.compile("from:\s*(.*)", flags=re.IGNORECASE),
 }
 
 
@@ -17,7 +18,9 @@ def parse_header_iterator(archive, archive_file):
     extracted_file = archive.extractfile(archive_file)
     for line in extracted_file:
         if line == b"\n":
+            print("HERE")
             break
+        print("LINE", line)
         yield line
 
 

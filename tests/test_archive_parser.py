@@ -30,21 +30,13 @@ class TestArchiveParser(unittest.TestCase):
         for temp_file in self.temp_files:
             os.remove(temp_file)
 
-    def get_test_archive_file(self, parsed_entries={}, extra_lines=[]):
+    def get_archive_file(self, lines):
         temp_directory = tempfile.mkdtemp()
 
-        default_entries = {}
-        default_entries.update(self.default_entries)
-        default_entries.update(parsed_entries)
-        required_entries = "".join([
-            "{date}".format(date=default_entries["date"]),
-            "{from_header}".format(from_header=default_entries["from"]),
-            "{subject}".format(subject=default_entries["subject"]),
-            "{extra_lines}".format(extra_lines="".join(extra_lines))
-        ])
+        file_content = "".join(lines)
 
         temp_file_one = tempfile.NamedTemporaryFile(dir=temp_directory)
-        temp_file_one.write(required_entries)
+        temp_file_one.write(file_content)
         temp_file_one.flush()
 
         temp_tar_file = tempfile.mkstemp()
@@ -84,47 +76,54 @@ class TestArchiveParser(unittest.TestCase):
 
     def test_parse_archive_raises_on_non_tar_file(self):
         temp_file = tempfile.NamedTemporaryFile()
+
         with self.assertRaises(InvalidArchiveFile):
             parse_archive(temp_file.name)
 
     def test_parsing_returns_correct_date(self):
-        test_archive_file = self.get_test_archive_file()
+        test_archive_file = self.get_archive_file(
+            ["Date: Fri, 01 Apr 2011 05:52:55 PDT\n"])
+
         result = parse_archive(test_archive_file.name)
 
         self.assertEqual([{"date": "Fri, 01 Apr 2011 05:52:55 PDT"}], result)
 
-    def test_parseing_date_ignores_case(self):
-        test_archive_file = self.get_test_archive_file(
-            parsed_entries={"date": "date: Fri, 01 Apr 2011 05:52:55 PDT\n"})
+    def test_parsing_date_ignores_case(self):
+        test_archive_file = self.get_archive_file(
+            ["date: Fri, 01 Apr 2011 05:52:55 PDT\n"])
+
         result = parse_archive(test_archive_file.name)
 
         self.assertEqual([{"date": "Fri, 01 Apr 2011 05:52:55 PDT"}], result)
 
-    def test_parsing_date_accepts_no_space(self):
-        test_archive_file = self.get_test_archive_file(
-            parsed_entries={"date": "date:Fri, 01 Apr 2011 05:52:55 PDT\n"})
+    def test_parsing_date_accepts_no_space_delimeter(self):
+        test_archive_file = self.get_archive_file(
+            ["date:Fri, 01 Apr 2011 05:52:55 PDT\n"])
+
         result = parse_archive(test_archive_file.name)
 
         self.assertEqual([{"date": "Fri, 01 Apr 2011 05:52:55 PDT"}], result)
 
     def test_parsing_date_accepts_extra_space(self):
-        test_archive_file = self.get_test_archive_file(
-            parsed_entries={"date": "date:      Fri, 01 Apr 2011 05:52:55 PDT\n"})
+        test_archive_file = self.get_archive_file(
+            ["date:      Fri, 01 Apr 2011 05:52:55 PDT\n"])
+
         result = parse_archive(test_archive_file.name)
 
         self.assertEqual([{"date": "Fri, 01 Apr 2011 05:52:55 PDT"}], result)
 
     def test_parsing_date_accepts_multiple_lines(self):
-        test_archive_file = self.get_test_archive_file(
-            parsed_entries={"date": "date: Fri, 01 Apr 2011 \n\t\t05:52:55 PDT\n"})
+        test_archive_file = self.get_archive_file(
+            ["date: Fri, 01 Apr 2011 \n\t\t05:52:55 PDT\n"])
+
         result = parse_archive(test_archive_file.name)
 
         self.assertEqual([{"date": "Fri, 01 Apr 2011 05:52:55 PDT"}], result)
 
     def test_parsing_ignores_body(self):
-        test_archive_file = self.get_test_archive_file(
-            parsed_entries={"date": ""},
-            extra_lines=["\n", "date: Fri, 02 Apr 2011 \n\t\t05:52:55 PDT\n"])
+        test_archive_file = self.get_archive_file(
+            ["\n", "date: Fri, 02 Apr 2011 \n\t\t05:52:55 PDT\n"])
+
         result = parse_archive(test_archive_file.name)
 
         self.assertEqual([{}], result)
