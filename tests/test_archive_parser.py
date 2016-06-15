@@ -179,10 +179,55 @@ class TestArchiveParser(unittest.TestCase):
 
         self.assertEqual([{"from": "Corel <news@email1-corel.com>"}], result)
 
-    def test_parses_subject_correctly(self):
+    def test_parsing_subject_returns_correct_data(self):
         test_archive_file = self.get_archive_file(
-            ["From: Corel <news@email1-corel.com>\n"])
+            ["Subject: PREVIEW:   Save $170 and get special gift with CorelDraw Premium"
+                "Suite X5\n"])
 
         result = parse_archive(test_archive_file.name)
 
-        self.assertEqual([{"from": "Corel <news@email1-corel.com>"}], result)
+        self.assertEqual([
+            {"subject": "PREVIEW:   Save $170 and get special gift with CorelDraw Premium"
+                "Suite X5"}], result)
+
+    def test_parsing_subject_ignores_case(self):
+        test_archive_file = self.get_archive_file(
+            ["SuBjeCT: PREVIEW:   Save $170 and get special gift with CorelDraw Premium"
+                "Suite X5"])
+
+        result = parse_archive(test_archive_file.name)
+        self.assertEqual([
+            {"subject": "PREVIEW:   Save $170 and get special gift with CorelDraw Premium"
+                "Suite X5"}], result)
+
+    def test_parsing_subject_accepts_no_space_delimeter(self):
+        test_archive_file = self.get_archive_file(
+            ["Subject:PREVIEW:   Save $170 and get special gift with CorelDraw Premium"
+                "Suite X5"])
+
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual([
+            {"subject": "PREVIEW:   Save $170 and get special gift with CorelDraw Premium"
+                "Suite X5"}], result)
+
+    def test_parsing_subject_accepts_extra_space(self):
+        test_archive_file = self.get_archive_file(
+            ["Subject:      PREVIEW:   Save $170 and get special gift with CorelDraw Premium"
+                "Suite X5"])
+
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual([
+            {"subject": "PREVIEW:   Save $170 and get special gift with CorelDraw Premium"
+                "Suite X5"}], result)
+
+    def test_parsing_subject_accepts_multiple_lines(self):
+        test_archive_file = self.get_archive_file(
+            ["Subject:PREVIEW:   Save $170 and get \n\t\tspecial gift with \n\t\tCorelDraw Premium"
+                "Suite X5"])
+        result = parse_archive(test_archive_file.name)
+
+        self.assertEqual([
+            {"subject": "PREVIEW:   Save $170 and get special gift with CorelDraw Premium"
+                "Suite X5"}], result)

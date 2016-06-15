@@ -9,6 +9,7 @@ HEADER_PATTERNS = {
     "date": re.compile("Date:\s*(.*)", flags=re.IGNORECASE),
     "continuation": re.compile("^\s+(.*)"),
     "from": re.compile("from:\s*(.*)", flags=re.IGNORECASE),
+    "subject": re.compile("subject:\s*(.*)", flags=re.IGNORECASE),
 }
 
 
