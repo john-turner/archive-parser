@@ -296,12 +296,6 @@ class TestArchiveParser(unittest.TestCase):
         self.assertIn({"date": "date3", "from": "from3", "subject": "subject3"}, result)
 
     def test_save_parsing_results_saves_data_to_correct_file(self):
-            # temp_output_file = tempfile.mkstemp()
-            # temp_output_file_name = temp_output_file[1]
-
-            # self.temp_files.append(temp_output_file_name)
-            # with tarfile.open(temp_output_file_name, "w"):
-            #     print(1)
             temp_output_file_name = tempfile.NamedTemporaryFile().name
 
             results = [
