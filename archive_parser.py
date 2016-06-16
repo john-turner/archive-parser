@@ -6,10 +6,10 @@ import pprint
 import json
 
 HEADER_PATTERNS = {
-    "date": re.compile("Date:\s*(.*)", flags=re.IGNORECASE),
-    "continuation": re.compile("^\s+(.*)"),
-    "from": re.compile("from:\s*(.*)", flags=re.IGNORECASE),
-    "subject": re.compile("subject:\s*(.*)", flags=re.IGNORECASE),
+    "date": re.compile(r"Date:\s*(.*)", flags=re.IGNORECASE),
+    "continuation": re.compile(r"^\s+(.*)"),
+    "from": re.compile(r"from:\s*(.*)", flags=re.IGNORECASE),
+    "subject": re.compile(r"subject:\s*(.*)", flags=re.IGNORECASE),
 }
 
 
