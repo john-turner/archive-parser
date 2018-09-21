@@ -88,6 +88,8 @@ def main():
 
     result = parse_archive(args.archive)
 
+    save_parsing_results(args.output_file_path, result)
+
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(result)
 

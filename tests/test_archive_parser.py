@@ -1,11 +1,11 @@
 import unittest
 import sys
-import mock
 import tempfile
 import tarfile
 import os
 import json
 
+from unittest.mock import patch
 from archive_parser import main, InvalidArchiveFile, parse_archive, save_parsing_results
 
 _ORIGINAL_SYS_EXIT = sys.exit
@@ -28,7 +28,7 @@ class TestArchiveParser(unittest.TestCase):
     def get_temp_file(self, temp_directory, lines):
         file_content = "".join(lines)
 
-        temp_file = tempfile.NamedTemporaryFile(dir=temp_directory)
+        temp_file = tempfile.NamedTemporaryFile(mode='w', dir=temp_directory)
         temp_file.write(file_content)
         temp_file.flush()
 
@@ -79,8 +79,8 @@ class TestArchiveParser(unittest.TestCase):
         with self.assertRaises(SysExitCalled):
             main()
 
-    @mock.patch("archive_parser.parse_archive", autospec=True)
-    @mock.patch("os.path.isfile")
+    @patch("archive_parser.parse_archive", autospec=True)
+    @patch("os.path.isfile")
     def test_archive_parser_requires_output_file_argument(self, mock_isfile, mock_archive_parser):
         sys.argv = ["archive_parser.py", "archives/test.msg"]
         mock_isfile.return_value = True
@@ -88,7 +88,7 @@ class TestArchiveParser(unittest.TestCase):
         with self.assertRaises(SysExitCalled):
             main()
 
-    @mock.patch("os.path.isfile")
+    @patch("os.path.isfile")
     def test_archive_parser_requires_valid_archive_file(self, mock_isfile):
         sys.argv = ["archive_parser.py", "archives/test.msg", "output_file_path"]
         mock_isfile.return_value = False
@@ -96,9 +96,9 @@ class TestArchiveParser(unittest.TestCase):
         with self.assertRaises(InvalidArchiveFile):
             main()
 
-    @mock.patch("archive_parser.parse_archive")
-    @mock.patch("os.access")
-    @mock.patch("os.path.isfile")
+    @patch("archive_parser.parse_archive")
+    @patch("os.access")
+    @patch("os.path.isfile")
     def test_archive_parser_passes_correct_file_path_to_extractor(
             self, mock_isfile, mock_access, mock_extractor):
         mock_isfile.return_value = True
@@ -306,5 +306,4 @@ class TestArchiveParser(unittest.TestCase):
 
             with open(temp_output_file_name) as ouput_file:
                 json_output_data = json.load(ouput_file)
-                print(json_output_data)
                 self.assertEqual({"results": results}, json_output_data)
