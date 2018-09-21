@@ -4,4 +4,4 @@ A program that will parse an archive of MSG files, and create a single output fi
 
 - Run Tests: `python -m unittest`
 
-- Run Program: `python archive_parser.py archives/sampleEmailstar.gz .result.txt`
+- Run Program: `python archive_parser.py archives/sampleEmailstar.gz result.txt`
